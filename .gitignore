@@ -35,6 +35,7 @@ boot/main.o
 build
 PROBLEM-STATEMENT.md
 NOTES.md
+TODO.md
 
 # Build artifacts (object files, dep files, compiled binaries, editor backups)
 *.o
