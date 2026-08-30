@@ -24,7 +24,7 @@ It is recommended to isolate LiteX and Python dependencies using a virtual envir
 ```
 python3 -m venv litex-env
 source litex-env/bin/activate
-```
+```V
 Your shell should now indicate the active environment (litex-env).
 ## 3. Run LiteX Setup Script
 Make the setup script executable and initialize the LiteX environment.
