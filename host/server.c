@@ -27,7 +27,7 @@ int main(void) {
     /* Configure server address */
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr("192.168.1.100");  /* Listen on 192.168.1.100 */
-    server_addr.sin_port = htons(SERVER_PORT);        /* Port 8080 */
+    server_addr.sin_port = htons(SERVER_PORT);        /* Port 1234 */
 
     /* Bind the socket to the address and port */
     if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {

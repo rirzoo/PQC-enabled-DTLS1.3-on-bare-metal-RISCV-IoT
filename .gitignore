@@ -33,3 +33,20 @@ boot/crt0.o
 boot/main.d
 boot/main.o
 build
+PROBLEM-STATEMENT.md
+NOTES.md
+
+# Build artifacts (object files, dep files, compiled binaries, editor backups)
+*.o
+*.d
+*.bak
+
+# Host-side wolfSSL is a full upstream clone (~938 MB, own .git) — not vendored here
+host/wolfssl/
+
+# Compiled host binaries
+host/server
+host/server_dtls
+
+# Private keys / host secrets must never be committed (public cert/DER are fine)
+host/certs/*-key.pem
