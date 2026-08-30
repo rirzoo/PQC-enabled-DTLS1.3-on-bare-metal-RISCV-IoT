@@ -114,6 +114,14 @@ uint32_t dtls_uptime_seconds(void)
     return (uint32_t)(dtls_timer_ticks() / (uint64_t)CONFIG_CLOCK_FREQUENCY);
 }
 
+/* Millisecond-resolution monotonic sim-time (from the same 1 MHz tick source).
+ * Deterministic in the Verilator sim regardless of host speed, so it is a stable
+ * basis for comparing handshake latency across builds/optimizations. */
+uint32_t dtls_uptime_millis(void)
+{
+    return (uint32_t)(dtls_timer_ticks() / (uint64_t)(CONFIG_CLOCK_FREQUENCY / 1000u));
+}
+
 /* wolfSSL needs this because NO_ASN_TIME suppresses its built-in LowResTimer. */
 word32 LowResTimer(void)
 {

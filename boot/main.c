@@ -112,6 +112,7 @@ int main(void)
 
     printf("Starting DTLS 1.3 handshake (ML-KEM-512)...\n");
     uint32_t t_start = dtls_uptime_seconds();
+    uint32_t t_start_ms = dtls_uptime_millis();
     uint32_t rtx_mark = t_start;
     int last_err = 0;
     unsigned long pumps = 0;
@@ -150,6 +151,8 @@ int main(void)
     }
 
     printf("\n*** DTLS 1.3 HANDSHAKE COMPLETE ***\n");
+    printf("  handshake time: %u ms (sim-time; incl. transport + server pacing)\n",
+           (unsigned)(dtls_uptime_millis() - t_start_ms));
     printf("  version : %s\n", wolfSSL_get_version(ssl));
     printf("  cipher  : %s\n", wolfSSL_get_cipher(ssl));
     {

@@ -16,15 +16,28 @@ point, not the raw list of build flags. Each capability change (e.g. adding Dili
 auth, or trimming unused algorithms) gets a new row so the delta is attributable to a
 capability, not lost in noise.
 
-**How to reproduce a row:** `riscv64-linux-gnu-size -A boot/boot.elf` → read `.text`,
-`.rodata`, `.data`, `.bss`; loadable image = `stat -c%s boot/boot.bin`. Ignore the Berkeley
-(`size` without `-A`) `bss` total: it folds in `._user_heap` (a fixed **16 MiB** static heap
-pool, not capability-scaled) and so overstates RAM by ~16 MB.
+**How to reproduce a row:** run **`scripts/footprint.sh`** — it reads `.text/.rodata/.data/
+.bss` from `<triple>-size -A boot/boot.elf`, the loadable image from `stat -c%s boot/boot.bin`,
+and scrapes the handshake latency from the newest `evidence/phaseB_sim.log`
+(`handshake time: N ms`, printed by the firmware). It prints a ready-to-paste Markdown row;
+`-a` also appends a machine-readable row to `evidence/footprint.csv`. (Manual equivalent:
+`riscv64-linux-gnu-size -A boot/boot.elf`.) Ignore the Berkeley (`size` without `-A`) `bss`
+total: it folds in `._user_heap` (a fixed **16 MiB** static heap pool, not capability-scaled)
+and so overstates RAM by ~16 MB.
 
-| Date | Client can do | .text | .rodata | .data | .bss | Loadable `boot.bin` |
-|------|---------------|------:|--------:|------:|-----:|--------------------:|
-| 2026-08-30 | UDP only (no wolfSSL linked) — Phase A | 9,800 | — | 16 | 512,360 | 9,816 B |
-| 2026-08-30 | **DTLS 1.3 client · ML-KEM-512 KEM · ECC P-256 server-auth verify · AES-128-GCM/SHA-256** — Phase B (B6) | 505,116 | 82,560 | 552 | 12,848 | 588,264 B (574 KiB) |
+**Handshake latency** is measured in **sim-time milliseconds** (firmware `dtls_uptime_millis()`,
+a 1 MHz tick source), so it is deterministic regardless of host/Verilator speed. It is
+*transport-inclusive* — it covers DTLS round-trips, retransmits, and the server's flight
+pacing (`DTLS_PACE_US`, default 25 ms) — so it is only comparable across runs with the **same
+pacing and loss conditions**. Hold those constant when comparing optimizations.
+
+| Date | Client can do | .text | .rodata | .data | .bss | Loadable `boot.bin` | Handshake |
+|------|---------------|------:|--------:|------:|-----:|--------------------:|----------:|
+| 2026-08-30 | UDP only (no wolfSSL linked) — Phase A | 9,800 | — | 16 | 512,360 | 9,816 B | n/a |
+| 2026-08-30 | **DTLS 1.3 client · ML-KEM-512 KEM · ECC P-256 server-auth verify · AES-128-GCM/SHA-256** — Phase B (B6) | 505,116 | 82,560 | 552 | 12,848 | 588,264 B (574 KiB) | pending re-run* |
+
+\* B6 completed the handshake but predates the latency instrumentation; the `handshake time`
+line lands on the next tap run and this cell (plus `evidence/footprint.csv`) gets filled then.
 
 **Baseline (B6) capability detail.** What this image supports today: a **DTLS 1.3 client**
 (RFC 9147) over the liteeth UDP transport; **ML-KEM-512** post-quantum key exchange;

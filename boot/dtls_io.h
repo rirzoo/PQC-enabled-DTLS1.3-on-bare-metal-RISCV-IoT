@@ -30,4 +30,8 @@ void dtls_io_pump(void);
  * wolfSSL as LowResTimer(). */
 uint32_t dtls_uptime_seconds(void);
 
+/* Millisecond-resolution monotonic sim-time (same 1 MHz tick source). Stable
+ * basis for comparing handshake latency across builds. */
+uint32_t dtls_uptime_millis(void);
+
 #endif /* DTLS_IO_H */
