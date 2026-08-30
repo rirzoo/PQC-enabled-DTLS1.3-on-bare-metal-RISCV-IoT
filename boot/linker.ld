@@ -6,8 +6,10 @@ __DYNAMIC = 0;
 INCLUDE generated/regions.ld
 
 /* Default sizes if not defined externally */
-_stack_size = DEFINED(_stack_size) ? _stack_size : 500k;
-_heap_size  = DEFINED(_heap_size)  ? _heap_size  : 500k;
+/* Generous sizes: main_ram is 100 MB, and wolfSSL DTLS 1.3 + ML-KEM with
+ * WOLFSSL_SMALL_STACK moves large temporaries onto the heap. */
+_stack_size = DEFINED(_stack_size) ? _stack_size : 2M;
+_heap_size  = DEFINED(_heap_size)  ? _heap_size  : 16M;
 
 SECTIONS
 {

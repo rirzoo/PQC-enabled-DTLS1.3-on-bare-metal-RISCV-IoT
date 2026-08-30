@@ -1,3 +1,10 @@
+/*
+ * PQC-DTLS 1.3 client firmware for a bare-metal LiteX/VexRiscv RISC-V SoC.
+ *
+ * Transport: liteeth UDP (see dtls_io.c for the wolfSSL<->liteeth glue).
+ * Security:  DTLS 1.3, ML-KEM-512 key exchange (PQC KEM), server authenticated
+ *            with an embedded ECC (P-256) CA certificate.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,77 +15,182 @@
 #include <libbase/console.h>
 #include <libbase/uart.h>
 
+#include <wolfssl/wolfcrypt/settings.h>
+#include <wolfssl/ssl.h>
 
-
-
-// #include <wolfssl/wolfcrypt/user_settings.h>
-// #include <wolfssl/options.h>
-// #include <wolfssl/wolfcrypt/wc_mlkem.h>
-// #include <wolfssl/wolfcrypt/random.h>
-// #include <wolfssl/ssl.h> 
-
-
+#include "dtls_io.h"
+#include "certs.h"          /* server_cert_der[] - trusted CA (server's self-signed cert) */
 
 #ifdef min
 #undef min
 #endif
-
 #ifdef max
 #undef max
 #endif
 
+/* -------- network identity (matches litex_sim --local-ip/--remote-ip) -------- */
+#define MY_IP        IPTOINT(192, 168, 1, 50)
+#define SERVER_IP    IPTOINT(192, 168, 1, 100)
+#define MY_MAC       {0x02, 0x00, 0x00, 0x00, 0x00, 0x01}
+#define CLIENT_PORT  5555
+#define SERVER_PORT  11111
 
+/* Give up on the handshake after this many simulated seconds (safety net). */
+#define HANDSHAKE_TIMEOUT_S  60
 
-// 1. Define your Network Identity
-#define MY_IP      IPTOINT(192, 168, 1, 50)
-#define SERVER_IP  IPTOINT(192, 168, 1, 100)
-#define MY_MAC     {0x02, 0x00, 0x00, 0x00, 0x00, 0x01}
-#define UDP_PORT   1234
-
-// 2. The Callback: What to do when a packet arrives
-void udp_rx_handler(uint32_t src_ip, uint16_t src_port, uint16_t dst_port, void *data, uint32_t length) {
-    printf("\n[UDP RX] Received %u bytes from %08x:%u\n", (unsigned int)length, (unsigned int)src_ip, src_port);
-    
-    char *payload = (char *)data;
-    for(uint32_t i = 0; i < length; i++) {
-        putchar(payload[i]);
+/*
+ * Entropy source (CUSTOM_RAND_GENERATE_SEED). Mixes the free-running timer with
+ * a small LCG. NOTE: this is NOT a cryptographically secure TRNG - it is a
+ * placeholder for a real hardware entropy source (a later deliverable).
+ */
+int CustomRngGenerateBlock(unsigned char *output, unsigned int sz)
+{
+    static uint32_t s = 0x2545F491u;
+    for (unsigned int i = 0; i < sz; i++) {
+        timer0_update_value_write(1);
+        s ^= timer0_value_read();
+        s = s * 1664525u + 1013904223u;   /* LCG mix */
+        output[i] = (unsigned char)(s >> 24);
     }
-    printf("\n------------------------------\n");
+    return 0;
 }
 
-int main(void) {
+int main(void)
+{
     uint8_t mac[] = MY_MAC;
-    
+
+#ifdef CONFIG_CPU_HAS_INTERRUPT
+    irq_setmask(0);
+    irq_setie(1);
+#endif
     uart_init();
-    printf("Starting UDP Test Client...\n");
+    printf("\n=== PQC-DTLS 1.3 RISC-V client ===\n");
 
-    // Initialize UDP Stack
+    /* Bring up the UDP stack and resolve the server's MAC via ARP. */
     udp_start(mac, MY_IP);
-    udp_set_callback(udp_rx_handler);
-
-    // 3. Send a predetermined message
-    // Note: On bare-metal, we often need to trigger ARP first to find the Server
-    printf("Resolving Server MAC via ARP...\n");
-    while(udp_arp_resolve(SERVER_IP) == 0) {
-        udp_service(); // Must call service to process the ARP reply!
-    }
-    printf("Server resolved. Sending Test Message...\n");
-
-    // Get the hardware TX buffer
-    void *tx_buf = udp_get_tx_buffer();
-    char *msg = "Hello from LiteX SoC!";
-    uint32_t msg_len = strlen(msg);
-    
-    // Copy message to hardware and send
-    memcpy(tx_buf, msg, msg_len);
-    udp_send(UDP_PORT, UDP_PORT, msg_len);
-
-    printf("Message sent. Entering listening loop...\n");
-
-    while(1) {
-        // 4. Polling the hardware
+    printf("Resolving server (192.168.1.100) via ARP...\n");
+    while (udp_arp_resolve(SERVER_IP) == 0)
         udp_service();
+    printf("Server MAC resolved.\n");
+
+    /* Wire wolfSSL to the liteeth transport. */
+    dtls_io_init(CLIENT_PORT, SERVER_PORT);
+
+    wolfSSL_Init();
+#ifdef DEBUG_WOLFSSL
+    wolfSSL_Debugging_ON();
+#endif
+
+    WOLFSSL_CTX *ctx = wolfSSL_CTX_new(wolfDTLSv1_3_client_method());
+    if (ctx == NULL) {
+        printf("FATAL: wolfSSL_CTX_new failed\n");
+        return -1;
+    }
+    dtls_io_register(ctx);
+
+    /* Trust the server's certificate (embedded DER CA). */
+    if (wolfSSL_CTX_load_verify_buffer(ctx, server_cert_der, server_cert_der_len,
+                                       WOLFSSL_FILETYPE_ASN1) != WOLFSSL_SUCCESS) {
+        printf("FATAL: load_verify_buffer failed\n");
+        return -1;
     }
 
+    WOLFSSL *ssl = wolfSSL_new(ctx);
+    if (ssl == NULL) {
+        printf("FATAL: wolfSSL_new failed\n");
+        return -1;
+    }
+
+    wolfSSL_dtls_set_using_nonblock(ssl, 1);
+    wolfSSL_dtls_set_mtu(ssl, 1400);
+
+    /* Post-quantum key exchange: ML-KEM-512. */
+    if (wolfSSL_UseKeyShare(ssl, WOLFSSL_ML_KEM_512) != WOLFSSL_SUCCESS) {
+        printf("FATAL: UseKeyShare(ML_KEM_512) failed\n");
+        return -1;
+    }
+
+    printf("Starting DTLS 1.3 handshake (ML-KEM-512)...\n");
+    uint32_t t_start = dtls_uptime_seconds();
+    uint32_t rtx_mark = t_start;
+    int last_err = 0;
+    unsigned long pumps = 0;
+    int ret;
+    for (;;) {
+        ret = wolfSSL_connect(ssl);
+        if (ret == WOLFSSL_SUCCESS)
+            break;
+
+        int err = wolfSSL_get_error(ssl, ret);
+        if (err != last_err) {
+            printf("[hs] connect err %d (t=%us)\n", err,
+                   (unsigned)(dtls_uptime_seconds() - t_start));
+            last_err = err;
+        }
+        if (err == WOLFSSL_ERROR_WANT_READ || err == WOLFSSL_ERROR_WANT_WRITE) {
+            dtls_io_pump();
+            if ((++pumps % 20000UL) == 0)
+                printf("[hs] alive, pumps=%lu t=%us\n", pumps,
+                       (unsigned)(dtls_uptime_seconds() - t_start));
+            uint32_t now = dtls_uptime_seconds();
+            int to = wolfSSL_dtls_get_current_timeout(ssl);
+            if (to > 0 && (int)(now - rtx_mark) >= to) {
+                wolfSSL_dtls_got_timeout(ssl);   /* retransmit last flight */
+                rtx_mark = now;
+            }
+            if ((now - t_start) >= HANDSHAKE_TIMEOUT_S) {
+                printf("FAIL: handshake timed out after %u s\n",
+                       (unsigned)(now - t_start));
+                goto cleanup;
+            }
+            continue;
+        }
+        printf("FAIL: wolfSSL_connect error %d\n", err);
+        goto cleanup;
+    }
+
+    printf("\n*** DTLS 1.3 HANDSHAKE COMPLETE ***\n");
+    printf("  version : %s\n", wolfSSL_get_version(ssl));
+    printf("  cipher  : %s\n", wolfSSL_get_cipher(ssl));
+    {
+        const char *grp = wolfSSL_get_curve_name(ssl);
+        printf("  group   : %s\n", grp ? grp : "(n/a)");
+    }
+
+    /* Exchange one application-data message over the secure channel. */
+    {
+        const char *msg = "Hello from RISC-V DTLS 1.3 client!";
+        int n = wolfSSL_write(ssl, msg, (int)strlen(msg));
+        printf("  wrote %d app bytes\n", n);
+
+        char in[128];
+        int got;
+        uint32_t rd_start = dtls_uptime_seconds();
+        do {
+            got = wolfSSL_read(ssl, in, (int)sizeof(in) - 1);
+            if (got > 0) {
+                in[got] = '\0';
+                printf("  server says: %s\n", in);
+                break;
+            }
+            int err = wolfSSL_get_error(ssl, got);
+            if (err == WOLFSSL_ERROR_WANT_READ) {
+                dtls_io_pump();
+            } else {
+                printf("  read error %d\n", err);
+                break;
+            }
+        } while ((dtls_uptime_seconds() - rd_start) < 10);
+    }
+
+    printf("=== session done ===\n");
+
+cleanup:
+    wolfSSL_free(ssl);
+    wolfSSL_CTX_free(ctx);
+    wolfSSL_Cleanup();
+
+    while (1)
+        udp_service();
     return 0;
 }
