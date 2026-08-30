@@ -34,10 +34,16 @@ pacing and loss conditions**. Hold those constant when comparing optimizations.
 | Date | Client can do | .text | .rodata | .data | .bss | Loadable `boot.bin` | Handshake |
 |------|---------------|------:|--------:|------:|-----:|--------------------:|----------:|
 | 2026-08-30 | UDP only (no wolfSSL linked) — Phase A | 9,800 | — | 16 | 512,360 | 9,816 B | n/a |
-| 2026-08-30 | **DTLS 1.3 client · ML-KEM-512 KEM · ECC P-256 server-auth verify · AES-128-GCM/SHA-256** — Phase B (B6) | 505,116 | 82,560 | 552 | 12,848 | 588,264 B (574 KiB) | pending re-run* |
+| 2026-08-30 | **DTLS 1.3 client · ML-KEM-512 KEM · ECC P-256 server-auth verify · AES-128-GCM/SHA-256** — Phase B (B6) | 505,196 | 82,624 | 552 | 12,848 | 588,392 B (575 KiB) | 47,456 ms |
 
-\* B6 completed the handshake but predates the latency instrumentation; the `handshake time`
-line lands on the next tap run and this cell (plus `evidence/footprint.csv`) gets filled then.
+Handshake latency captured on the instrumented re-run (`commit 52abec4`,
+`evidence/phaseB_sim.log`, first machine-readable row in `evidence/footprint.csv`): **47,456 ms
+sim-time** — end to end from `wolfSSL_connect()` start to `HANDSHAKE COMPLETE`, **inclusive of
+transport + the 25 ms server inter-datagram pacing** (`DTLS_PACE_US` default). This is the
+transport-inclusive baseline to beat with session resumption; it is **not** a pure-compute
+number (per-op cycle counters are a separate latency-optimization item). Compare future rows
+only under the same pacing/loss. (Section sizes shifted a few dozen bytes vs. the pre-latency
+B6 image because the instrumentation added the `dtls_uptime_millis()` call sites.)
 
 **Baseline (B6) capability detail.** What this image supports today: a **DTLS 1.3 client**
 (RFC 9147) over the liteeth UDP transport; **ML-KEM-512** post-quantum key exchange;

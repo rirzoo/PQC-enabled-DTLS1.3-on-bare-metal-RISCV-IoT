@@ -1,0 +1,2 @@
+date,commit,capability,text,rodata,data,bss,loadable_bin,handshake_ms
+2026-08-30,52abec4,"DTLS 1.3 client · ML-KEM-512 KEM · ECC P-256 verify · AES-128-GCM/SHA-256",505196,82624,552,12848,588392,47456
