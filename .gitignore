@@ -40,6 +40,7 @@ NOTES.md
 *.o
 *.d
 *.bak
+/boot.bin
 
 # Host-side wolfSSL is a full upstream clone (~938 MB, own .git) — not vendored here
 host/wolfssl/
