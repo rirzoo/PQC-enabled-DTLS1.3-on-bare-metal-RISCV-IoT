@@ -36,6 +36,8 @@ build
 PROBLEM-STATEMENT.md
 NOTES.md
 TODO.md
+CLAUDE.md
+PROGRESS.md
 
 # Build artifacts (object files, dep files, compiled binaries, editor backups)
 *.o

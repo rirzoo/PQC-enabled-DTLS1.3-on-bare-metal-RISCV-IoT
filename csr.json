@@ -193,7 +193,7 @@
         "config_cpu_human_name": "vexriscv",
         "config_cpu_nop": "nop",
         "config_main_ram_init": 1,
-        "config_identifier": "litex simulation 2026-08-30 18:13:05",
+        "config_identifier": "litex simulation 2026-08-30 18:51:18",
         "hw_preamble_crc": null,
         "rom_boot_address": 1073741824,
         "localip1": 192,
