@@ -1,0 +1,5 @@
+dropped privs to tcpdump
+tcpdump: listening on tap0, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+76 packets captured
+76 packets received by filter
+0 packets dropped by kernel

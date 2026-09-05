@@ -1,0 +1,99 @@
+[warn] Epoll ADD(1) on fd 0 failed. Old events were 0; read change was 1 (add); write change was 0 (none); close change was 0 (none): Operation not permitted
+[jtagremote] loaded (0x2f9e22f0)
+[gmii_ethernet] loaded (0x2f9e22f0)
+[spdeeprom] loaded (addr = 0x0)
+[clocker] loaded
+[serial2tcp] loaded (0x2f9e22f0)
+[serial2console] loaded (0x2f9e22f0)
+[ethernet] loaded (0x2f9e22f0)
+[xgmii_ethernet] loaded (0x2f9e22f0)
+MDEBUG: Save time: -1, load_time: 0
+[clocker] sys_clk: freq_hz=1000000, phase_deg=0
+
+[1m        __   _ __      _  __[0m
+[1m       / /  (_) /____ | |/_/[0m
+[1m      / /__/ / __/ -_)>  <[0m
+[1m     /____/_/\__/\__/_/|_|[0m
+[1m   Build your hardware, easily![0m
+
+ (c) Copyright 2012-2025 Enjoy-Digital
+ (c) Copyright 2007-2015 M-Labs
+
+ BIOS built on Sep  5 2026 15:49:59
+ BIOS CRC passed (08eb7b65)
+
+ LiteX git sha1: 43308e3
+
+--=============== [1mSoC[0m ==================--
+[1mCPU[0m:		VexRiscv @ 1MHz
+[1mBUS[0m:		wishbone 32-bit @ 4GiB
+[1mCSR[0m:		32-bit data big ordering
+[1mROM[0m:		128.0KiB
+[1mSRAM[0m:		8.0KiB
+[1mMAIN-RAM[0m:	100.0MiB
+
+--========== [1mInitialization[0m ============--
+Ethernet init...
+Local IP: 192.168.1.50
+
+
+--============== [1mBoot[0m ==================--
+Booting from serial...
+Press Q or ESC to abort boot completely.
+sL5DdSMmkekro
+Timeout
+Executing booted program at 0x40000000
+
+--============= [1mLiftoff![0m ===============--
+
+=== PQC-DTLS 1.3 RISC-V client ===
+Resolving server (192.168.1.100) via ARP...
+Server MAC resolved.
+Interrupt-driven RX enabled (ethmac irq 2).
+Starting DTLS 1.3 handshake (ML-KEM-512)...
+[io] TX 977 bytes ...
+[io] TX 977 bytes done
+[io] RX 144 bytes -> wolfSSL
+[io] TX 1050 bytes ...
+[io] TX 1050 bytes done
+[io] RX 847 bytes -> wolfSSL
+[io] RX 74 bytes -> wolfSSL
+[io] RX 847 bytes -> wolfSSL
+[io] RX 74 bytes -> wolfSSL
+[io] TX 72 bytes ...
+[io] TX 72 bytes done
+[io] RX 847 bytes -> wolfSSL
+[io] RX 74 bytes -> wolfSSL
+[io] TX 40 bytes ...
+[io] TX 40 bytes done
+[io] RX 1400 bytes -> wolfSSL
+[io] RX 1400 bytes -> wolfSSL
+[io] RX 1400 bytes -> wolfSSL
+[io] RX 1400 bytes -> wolfSSL
+[io] RX 1400 bytes -> wolfSSL
+[io] RX 1400 bytes -> wolfSSL
+[hs] connect err 2 (t=41s)
+[io] TX 120 bytes ...
+[io] TX 120 bytes done
+[io] RX 1307 bytes -> wolfSSL
+[io] RX 1400 bytes -> wolfSSL
+[io] TX 56 bytes ...
+[io] TX 56 bytes done
+[io] RX 1092 bytes -> wolfSSL
+[io] RX 66 bytes -> wolfSSL
+[io] TX 66 bytes ...
+[io] TX 66 bytes done
+[io] RX 40 bytes -> wolfSSL
+
+*** DTLS 1.3 HANDSHAKE COMPLETE ***
+  handshake time: 69909 ms (sim-time; incl. transport + server pacing)
+  version : DTLSv1.3
+  cipher  : TLS13-AES128-GCM-SHA256
+  group   : ML_KEM_512
+[io] TX 56 bytes ...
+[io] TX 56 bytes done
+  wrote 34 app bytes
+[io] RX 59 bytes -> wolfSSL
+  server says: Hello from PQC-DTLS 1.3 Linux server!
+=== session done ===
+

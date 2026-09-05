@@ -1,0 +1,202 @@
+ CC       crt0.o
+ CC       main.o
+ CC       dtls_io.o
+ CC       wolfcrypt/src/arc4.o
+ CC       wolfcrypt/src/ascon.o
+ CC       wolfcrypt/src/aes.o
+ CC       wolfcrypt/src/asm.o
+ CC       wolfcrypt/src/asn.o
+ CC       wolfcrypt/src/async.o
+ CC       wolfcrypt/src/blake2s.o
+ CC       wolfcrypt/src/blake2b.o
+ CC       wolfcrypt/src/camellia.o
+ CC       wolfcrypt/src/chacha20_poly1305.o
+ CC       wolfcrypt/src/chacha.o
+ CC       wolfcrypt/src/cmac.o
+ CC       wolfcrypt/src/coding.o
+ CC       wolfcrypt/src/compress.o
+ CC       wolfcrypt/src/cpuid.o
+ CC       wolfcrypt/src/cryptocb.o
+ CC       wolfcrypt/src/curve25519.o
+ CC       wolfcrypt/src/curve448.o
+ CC       wolfcrypt/src/des3.o
+ CC       wolfcrypt/src/dh.o
+ CC       wolfcrypt/src/dilithium.o
+dtls_io.c:134:8: warning: no previous prototype for ‘LowResTimer’ [-Wmissing-prototypes]
+  134 | word32 LowResTimer(void)
+      |        ^~~~~~~~~~~
+ CC       wolfcrypt/src/dsa.o
+In file included from main.c:14:
+/home/romir/1_PQC_DTLS_PS/Constraint_Env_Sim/litex/litex/soc/software/libliteeth/inet.h:69:17: warning: ‘ntohs’ defined but not used [-Wunused-function]
+   69 | static uint16_t ntohs(uint16_t n)
+      |                 ^~~~~
+/home/romir/1_PQC_DTLS_PS/Constraint_Env_Sim/litex/litex/soc/software/libliteeth/inet.h:63:17: warning: ‘ntohl’ defined but not used [-Wunused-function]
+   63 | static uint32_t ntohl(uint32_t n)
+      |                 ^~~~~
+/home/romir/1_PQC_DTLS_PS/Constraint_Env_Sim/litex/litex/soc/software/libliteeth/inet.h:57:17: warning: ‘htons’ defined but not used [-Wunused-function]
+   57 | static uint16_t htons(uint16_t n)
+      |                 ^~~~~
+/home/romir/1_PQC_DTLS_PS/Constraint_Env_Sim/litex/litex/soc/software/libliteeth/inet.h:51:17: warning: ‘htonl’ defined but not used [-Wunused-function]
+   51 | static uint32_t htonl(uint32_t n)
+      |                 ^~~~~
+ CC       wolfcrypt/src/ecc.o
+ CC       wolfcrypt/src/ecc_fp.o
+ CC       wolfcrypt/src/eccsi.o
+ CC       wolfcrypt/src/ed25519.o
+ CC       wolfcrypt/src/ed448.o
+ CC       wolfcrypt/src/error.o
+ CC       wolfcrypt/src/evp.o
+ CC       wolfcrypt/src/ext_lms.o
+ CC       wolfcrypt/src/ext_mlkem.o
+ CC       wolfcrypt/src/ext_xmss.o
+wolfcrypt/src/evp.c:26:10: warning: #warning evp.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning evp.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       wolfcrypt/src/falcon.o
+ CC       wolfcrypt/src/fe_448.o
+ CC       wolfcrypt/src/fe_low_mem.o
+ CC       wolfcrypt/src/fe_operations.o
+ CC       wolfcrypt/src/fips.o
+ CC       wolfcrypt/src/fips_test.o
+ CC       wolfcrypt/src/ge_448.o
+ CC       wolfcrypt/src/ge_low_mem.o
+ CC       wolfcrypt/src/ge_operations.o
+ CC       wolfcrypt/src/hash.o
+ CC       wolfcrypt/src/hmac.o
+ CC       wolfcrypt/src/hpke.o
+ CC       wolfcrypt/src/integer.o
+ CC       wolfcrypt/src/kdf.o
+ CC       wolfcrypt/src/logging.o
+ CC       wolfcrypt/src/md2.o
+ CC       wolfcrypt/src/md4.o
+ CC       wolfcrypt/src/md5.o
+ CC       wolfcrypt/src/memory.o
+ CC       wolfcrypt/src/misc.o
+ CC       wolfcrypt/src/pkcs12.o
+wolfcrypt/src/misc.c:53:10: warning: #warning misc.c does not need to be compiled when using inline (NO_INLINE not defined) [-Wcpp]
+   53 |         #warning misc.c does not need to be compiled when using inline (NO_INLINE not defined)
+      |          ^~~~~~~
+ CC       wolfcrypt/src/pkcs7.o
+ CC       wolfcrypt/src/poly1305.o
+ CC       wolfcrypt/src/pwdbased.o
+ CC       wolfcrypt/src/random.o
+ CC       wolfcrypt/src/rc2.o
+ CC       wolfcrypt/src/ripemd.o
+ CC       wolfcrypt/src/rsa.o
+ CC       wolfcrypt/src/sakke.o
+ CC       wolfcrypt/src/selftest.o
+ CC       wolfcrypt/src/sha256.o
+ CC       wolfcrypt/src/sha3.o
+ CC       wolfcrypt/src/sha512.o
+ CC       wolfcrypt/src/sha.o
+ CC       wolfcrypt/src/signature.o
+ CC       wolfcrypt/src/siphash.o
+ CC       wolfcrypt/src/sm2.o
+ CC       wolfcrypt/src/sm3.o
+ CC       wolfcrypt/src/sm4.o
+ CC       wolfcrypt/src/sp_arm32.o
+ CC       wolfcrypt/src/sp_arm64.o
+ CC       wolfcrypt/src/sp_c32.o
+ CC       wolfcrypt/src/sp_armthumb.o
+ CC       wolfcrypt/src/sp_c64.o
+ CC       wolfcrypt/src/sp_cortexm.o
+ CC       wolfcrypt/src/sp_dsp32.o
+ CC       wolfcrypt/src/sphincs.o
+ CC       wolfcrypt/src/sp_int.o
+ CC       wolfcrypt/src/sp_sm2_arm32.o
+ CC       wolfcrypt/src/sp_sm2_arm64.o
+ CC       wolfcrypt/src/sp_sm2_armthumb.o
+ CC       wolfcrypt/src/sp_sm2_c32.o
+ CC       wolfcrypt/src/sp_sm2_c64.o
+ CC       wolfcrypt/src/sp_sm2_cortexm.o
+ CC       wolfcrypt/src/sp_sm2_x86_64.o
+ CC       wolfcrypt/src/sp_x86_64.o
+ CC       wolfcrypt/src/srp.o
+ CC       wolfcrypt/src/wc_dsp.o
+ CC       wolfcrypt/src/tfm.o
+ CC       wolfcrypt/src/wc_encrypt.o
+ CC       wolfcrypt/src/wc_lms.o
+ CC       wolfcrypt/src/wc_lms_impl.o
+ CC       wolfcrypt/src/wc_mlkem.o
+ CC       wolfcrypt/src/wc_mlkem_poly.o
+ CC       wolfcrypt/src/wc_pkcs11.o
+ CC       wolfcrypt/src/wc_port.o
+ CC       wolfcrypt/src/wc_xmss.o
+ CC       wolfcrypt/src/wc_xmss_impl.o
+ CC       wolfcrypt/src/wolfcrypt_first.o
+ CC       wolfcrypt/src/wolfcrypt_last.o
+ CC       wolfcrypt/src/wolfevent.o
+ CC       wolfcrypt/src/wolfmath.o
+ CC       src/bio.o
+ CC       src/conf.o
+ CC       src/crl.o
+ CC       src/dtls13.o
+ CC       src/dtls.o
+src/bio.c:31:10: warning: #warning bio.c does not need to be compiled separately from ssl.c [-Wcpp]
+   31 |         #warning bio.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/internal.o
+src/conf.c:26:10: warning: #warning conf.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning conf.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/keys.o
+ CC       src/ocsp.o
+ CC       src/pk.o
+ CC       src/quic.o
+ CC       src/sniffer.o
+ CC       src/ssl_asn1.o
+ CC       src/ssl_bn.o
+src/pk.c:46:10: warning: #warning pk.c does not need to be compiled separately from ssl.c [-Wcpp]
+   46 |         #warning pk.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/ssl.o
+ CC       src/ssl_certman.o
+ CC       src/ssl_crypto.o
+ CC       src/ssl_misc.o
+ CC       src/ssl_load.o
+src/ssl_asn1.c:31:10: warning: #warning ssl_asn1.c does not need to be compiled separately from ssl.c [-Wcpp]
+   31 |         #warning ssl_asn1.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+src/ssl_misc.c:26:10: warning: #warning ssl_misc.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning ssl_misc.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+src/ssl_crypto.c:26:10: warning: #warning ssl_crypto.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning ssl_crypto.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/ssl_p7p12.o
+ CC       src/ssl_sess.o
+src/ssl_load.c:59:10: warning: #warning ssl_load.c does not need to be compiled separately from ssl.c [-Wcpp]
+   59 |         #warning ssl_load.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/ssl_sk.o
+ CC       src/tls13.o
+src/ssl_certman.c:28:10: warning: #warning ssl_certman.c does not need to be compiled separately from ssl.c [-Wcpp]
+   28 |         #warning ssl_certman.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/tls.o
+src/ssl_bn.c:31:10: warning: #warning ssl_bn.c does not need to be compiled separately from ssl.c [-Wcpp]
+   31 |         #warning ssl_bn.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+src/ssl_sess.c:26:10: warning: #warning ssl_sess.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning ssl_sess.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/wolfio.o
+ CC       src/x509.o
+src/ssl_p7p12.c:33:10: warning: #warning ssl_p7p12.c does not need to be compiled separately from ssl.c [-Wcpp]
+   33 |         #warning ssl_p7p12.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+src/ssl_sk.c:26:10: warning: #warning ssl_sk.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning ssl_sk.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       src/x509_str.o
+src/x509.c:26:10: warning: #warning x509.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning x509.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+src/x509_str.c:26:10: warning: #warning x509_str.c does not need to be compiled separately from ssl.c [-Wcpp]
+   26 |         #warning x509_str.c does not need to be compiled separately from ssl.c
+      |          ^~~~~~~
+ CC       boot.elf
+/usr/bin/riscv64-linux-gnu-ld: warning: boot.elf has a LOAD segment with RWX permissions
+chmod -x boot.elf
+ OBJCOPY  boot.bin
+chmod -x boot.bin
