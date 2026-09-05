@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
-# Regenerate the self-signed ECC P-256 server cert/key and the firmware's embedded
-# DER header. Run from anywhere; paths below are relative to the repo root.
+# Regenerate the self-signed ML-DSA-44 (Dilithium2) server cert/key and the
+# firmware's embedded DER trust anchor (boot/certs.h).
 #
-# Private key is gitignored (host/certs/*-key.pem) and never touched by git;
+# OpenSSL cannot mint ML-DSA certs here (3.2, no OQS provider), so this compiles
+# and runs scripts/gen_mldsa_cert.c against host/wolfssl (which must be built with
+# --enable-dilithium --enable-certgen --enable-keygen).
+#
+# The private key is gitignored (host/certs/*-key.pem) and never touched by git;
 # the public cert/DER and boot/certs.h are tracked and must be regenerated
 # together whenever the key changes.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 certs_dir="$repo_root/host/certs"
+wolfssl_dir="$repo_root/host/wolfssl"
+libdir="$wolfssl_dir/src/.libs"
+tool_src="$repo_root/scripts/gen_mldsa_cert.c"
+tool_bin="$repo_root/scripts/gen_mldsa_cert"
 key="$certs_dir/server-key.pem"
 cert_pem="$certs_dir/server-cert.pem"
 cert_der="$certs_dir/server-cert.der"
@@ -16,18 +24,24 @@ certs_h="$repo_root/boot/certs.h"
 
 mkdir -p "$certs_dir"
 
-openssl ecparam -name prime256v1 -genkey -noout -out "$key"
+if [ ! -f "$libdir/libwolfssl.so" ]; then
+  echo "ERROR: $libdir/libwolfssl.so not found." >&2
+  echo "Build host wolfSSL first (--enable-dilithium --enable-certgen --enable-keygen)." >&2
+  exit 1
+fi
 
-openssl req -new -x509 -key "$key" -out "$cert_pem" -days 3650 \
-  -subj "/O=PQC-DTLS-Demo/CN=192.168.1.100" \
-  -addext "subjectAltName=IP:192.168.1.100"
+echo "Compiling ML-DSA cert tool..."
+gcc -O2 -Wall -o "$tool_bin" "$tool_src" \
+  -I"$wolfssl_dir" -L"$libdir" -lwolfssl -Wl,-rpath,"$libdir"
 
-openssl x509 -in "$cert_pem" -outform DER -out "$cert_der"
+echo "Generating ML-DSA-44 cert/key..."
+( cd "$repo_root" && "$tool_bin" "$certs_dir" )
 
 {
-  echo "/* Auto-generated from host/certs/server-cert.der (self-signed ECC P-256, CN=192.168.1.100)."
-  echo " * Embedded into the firmware as the trusted CA so the DTLS client can authenticate"
-  echo " * the server. Regenerate: scripts/gen_certs.sh */"
+  echo "/* Auto-generated from host/certs/server-cert.der (self-signed ML-DSA-44"
+  echo " * / Dilithium2, CN=192.168.1.100). Embedded into the firmware as the trusted"
+  echo " * CA so the DTLS client can post-quantum-authenticate the server."
+  echo " * Regenerate: scripts/gen_certs.sh */"
   echo "#ifndef CERTS_H"
   echo "#define CERTS_H"
   echo

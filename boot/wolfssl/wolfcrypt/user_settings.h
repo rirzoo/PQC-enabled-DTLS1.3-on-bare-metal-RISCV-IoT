@@ -74,6 +74,14 @@
 #define WOLFSSL_MLKEM_ENCAPSULATE_SMALL_MEM
 #define WOLFSSL_MLKEM_MAKEKEY_SMALL_MEM
 
+/* ML-DSA (Dilithium) — PQ server-cert authentication (client verifies only).
+ * Pairs with ML-KEM-512; the server presents an ML-DSA-44 cert. SHA3/SHAKE is
+ * already enabled above for ML-KEM (ML-DSA's hash dependency). */
+#define HAVE_DILITHIUM
+#define WOLFSSL_WC_DILITHIUM
+#define WOLFSSL_DILITHIUM_VERIFY_ONLY      // client never signs -> drop keygen+sign code
+#define WOLFSSL_DILITHIUM_VERIFY_SMALL_MEM // small-stack friendly (WOLFSSL_SMALL_STACK on)
+
 #define HAVE_HKDF
 #define WOLFSSL_KEY_GEN
 #define WOLFSSL_HAVE_SP_RSA
