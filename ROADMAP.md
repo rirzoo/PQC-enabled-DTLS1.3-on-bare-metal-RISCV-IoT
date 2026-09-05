@@ -7,17 +7,23 @@ day-to-day engineering log is kept outside version control.
 
 - **Phase A** — UDP transport restored over liteeth. Done.
 - **Phase B** — DTLS 1.3 handshake completes end-to-end. Done. Negotiated **ML-KEM-512**
-  (post-quantum key exchange), **ECC P-256** server-certificate verification (classical
-  auth), **AES-128-GCM/SHA-256** record protection.
-- **PQC posture today:** post-quantum *key exchange*, classical *authentication*. Not yet
-  post-quantum-authenticated.
+  (post-quantum key exchange), ECC P-256 server-certificate verification, **AES-128-GCM/SHA-256**
+  record protection.
+- **Phase C** — Post-quantum *authentication*. Done (server-auth). The ECC server cert is
+  replaced by a self-signed **ML-DSA-44 (Dilithium2)** cert the client verifies, and RX is now
+  interrupt-driven (production cell **B1**: `DTLS_RX_IRQ=1`, nrxslots=2, no server pacing). See
+  `BENCHMARKS.md` § ML-DSA-44 for the 2×2 transport benchmark.
+- **PQC posture today:** post-quantum *key exchange* (ML-KEM-512) **and** post-quantum *server
+  authentication* (ML-DSA-44). Remaining classical gap: **mutual** auth (the client presents no
+  cert yet).
 
 ## Next milestones
 
-### Post-quantum authentication (Dilithium / ML-DSA)
-Replace the classical ECC server certificate with ML-DSA (Dilithium), then extend to mutual
-authentication (client certificate too). Expected to be the single largest footprint jump —
-`BENCHMARKS.md` will gain a new capability row quantifying it.
+### Mutual post-quantum authentication (client ML-DSA cert)
+Server-auth with ML-DSA-44 is done. Extend to mutual auth: the client also presents an ML-DSA
+cert (`wolfSSL_CTX_set_verify` on the server + a client cert/key). This adds the ML-DSA *sign*
+path to the firmware (today it is verify-only), so expect a further footprint jump —
+`BENCHMARKS.md` will gain a capability row quantifying it.
 
 ### Session resumption
 DTLS 1.3 session tickets, so a reconnect skips the full ML-KEM key exchange. Should produce

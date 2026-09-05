@@ -38,6 +38,7 @@ NOTES.md
 TODO.md
 CLAUDE.md
 PROGRESS.md
+INSIGHTS.md
 
 # Build artifacts (object files, dep files, compiled binaries, editor backups)
 *.o
@@ -51,6 +52,10 @@ host/wolfssl/
 # Compiled host binaries
 host/server
 host/server_dtls
+scripts/gen_mldsa_cert
 
 # Private keys / host secrets must never be committed (public cert/DER are fine)
 host/certs/*-key.pem
+
+# Local Claude Code config (skills, settings) — not part of the project
+.claude/
