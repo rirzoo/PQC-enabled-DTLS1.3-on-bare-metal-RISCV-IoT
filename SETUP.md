@@ -8,8 +8,10 @@ they differ.
 ## What you'll end up with
 
 - A LiteX simulated SoC (VexRiscv `standard`, rv32im) built with `litex_sim` (Verilator).
-- Firmware (`boot/boot.bin`) linking wolfSSL/wolfCrypt: a DTLS 1.3 client doing an ML-KEM-512
-  key exchange and verifying an ECC P-256 server certificate.
+- Firmware (`boot/boot.bin`) linking wolfSSL/wolfCrypt: a DTLS 1.3 client doing an **ML-KEM-512**
+  key exchange and verifying a post-quantum **ML-DSA-44 (Dilithium2)** server certificate
+  (verify-only). RX is interrupt-driven by default (an ethmac ISR drains the MAC during crypto —
+  the production config selected by the transport benchmark).
 - A Linux-side DTLS 1.3 server (`host/server_dtls`) built against a locally-compiled wolfSSL.
 - A `tap0` bridge carrying UDP/DTLS between the two over real Linux networking.
 
@@ -105,7 +107,8 @@ cd host/wolfssl
 git checkout v5.8.4-stable   # or the current release; verified against 5.8.4
 ./autogen.sh
 ./configure --enable-tls13 --enable-dtls --enable-dtls13 --enable-dtls-frag-ch \
-    --enable-mlkem --enable-experimental --enable-curve25519 --enable-ed25519
+    --enable-mlkem --enable-dilithium --enable-certgen --enable-keygen \
+    --enable-experimental --enable-curve25519 --enable-ed25519
 make -j"$(nproc)"
 cd ../..
 ```
@@ -113,35 +116,34 @@ cd ../..
 `--enable-dtls-frag-ch` is **required** for DTLS 1.3 + PQC — the ClientHello carrying the
 ML-KEM key share is too large for one datagram and must fragment. `--enable-dtls13` alone is
 rejected by `configure`; it needs `--enable-dtls --enable-tls13` alongside it.
+`--enable-dilithium --enable-certgen --enable-keygen` are needed for the **ML-DSA-44** server
+authentication: the host mints and serves an ML-DSA-signed cert, and `scripts/gen_certs.sh`
+(step 7) links this build to generate it (the system OpenSSL cannot mint ML-DSA certs).
 
-## 7. Generate the server certificate
+## 7. Generate the server certificate (ML-DSA-44)
 
 The repo tracks the server's public cert (`host/certs/server-cert.{pem,der}`) and the
-firmware's embedded copy of it (`boot/certs.h`), but **not** the private key — regenerate a
-matching key + cert pair (self-signed ECC P-256):
+firmware's embedded copy of it (`boot/certs.h`), but **not** the private key — so you must
+regenerate a matching ML-DSA-44 key + cert pair. The certificate is post-quantum
+(**ML-DSA-44 / Dilithium2**), which the system OpenSSL 3.2 cannot mint, so a helper script
+compiles and runs `scripts/gen_mldsa_cert.c` against the host wolfSSL you built in step 6:
 
 ```
-openssl ecparam -name prime256v1 -genkey -noout -out host/certs/server-key.pem
-openssl req -new -x509 -key host/certs/server-key.pem -out host/certs/server-cert.pem \
-    -days 3650 -subj "/O=PQC-DTLS-Demo/CN=192.168.1.100"
-openssl x509 -in host/certs/server-cert.pem -outform der -out host/certs/server-cert.der
+scripts/gen_certs.sh
 ```
 
-Then re-embed the new cert as the firmware's trusted CA and rebuild:
-
-```
-xxd -i -n server_cert_der host/certs/server-cert.der > /tmp/cert_array.h
-```
-
-Splice the generated array + `unsigned int server_cert_der_len = <size>;` into `boot/certs.h`
-between the `#ifndef CERTS_H` guard (see the existing file for the exact shape), then:
+This regenerates, in one step: `host/certs/server-key.pem` (private, gitignored),
+`host/certs/server-cert.{pem,der}`, and the firmware's trust anchor `boot/certs.h` (the DER
+embedded as `server_cert_der[]`). Then rebuild the firmware so it embeds the new cert:
 
 ```
 cd boot && make clean && make && cd ..
 ```
 
 (Skipping this step and reusing the tracked cert won't work — its private key isn't in the
-repo, so the server can never prove possession of it during the handshake.)
+repo, so the server can never prove possession of it during the handshake. `gen_certs.sh`
+requires the host wolfSSL from step 6, built with `--enable-dilithium --enable-certgen
+--enable-keygen`.)
 
 ## 8. Build the host DTLS server
 
@@ -209,6 +211,17 @@ Reads `boot/boot.elf` via `riscv64-linux-gnu-size -A` and scrapes handshake late
 newest `evidence/phaseB_sim.log`. See `BENCHMARKS.md` for the current numbers and how to read
 them.
 
+To reproduce the **ML-DSA-44 transport benchmark** (the controlled 2×2 matrix that selected the
+interrupt-RX / `nrxslots=2` production config over polling + server pacing):
+
+```
+bash scripts/run_mldsa_bench.sh    # needs sudo/tty; drives all four cells
+```
+
+It rebuilds the firmware per cell, compiles the Verilator model once per RX-slot count, runs
+each cell, and writes `evidence/mldsa_bench.csv` plus per-cell logs/pcaps. See `BENCHMARKS.md`
+§ ML-DSA-44 for the results and the cell-B1 selection.
+
 ## Troubleshooting
 
 - **`ModuleNotFoundError: litex`** — the venv's baked-in absolute path no longer matches; you
@@ -224,5 +237,8 @@ them.
   files don't rebuild on a flag-only change; `make clean` first.
 - **Handshake stalls with the server retransmitting a flight indefinitely** — the simulated
   liteeth MAC has few RX slots and can drop the tail of a fast burst while the ~1 MHz client
-  is busy in crypto. `server_dtls`'s `DTLS_PACE_US` env var (default 25000 µs) paces the
-  server's flight to give the client time to drain each datagram.
+  is busy in crypto. The default firmware handles this with **interrupt-driven RX**
+  (`boot/Makefile` `DTLS_RX_IRQ ?= 1`): the ethmac ISR drains the MAC even mid-crypto, so no
+  server pacing is needed (`server_dtls` defaults to `DTLS_PACE_US=0`). If you build the polled
+  firmware instead (`make DTLS_RX_IRQ=0`), re-enable pacing on the server —
+  `DTLS_PACE_US=25000 ./server_dtls 192.168.1.100` — or it will stall as above.
