@@ -59,8 +59,8 @@ ML-DSA). Cert size jumps from ~0.4 KB (ECC) to **3,996 B DER**.
 
 **The transport lever.** ML-DSA's larger Certificate/CertificateVerify flight makes the liteeth
 **RX-burst** problem worse (the SoC has only 2 HW RX slots; while the CPU is busy in ML-KEM/ML-DSA
-crypto nothing drains the MAC, so the burst tail overruns the slots and is dropped in hardware —
-PROGRESS §B6). Two fixes are benchmarked head-to-head, holding ML-DSA-44 constant:
+crypto nothing drains the MAC, so the burst tail overruns the slots and is dropped in hardware).
+Two fixes are benchmarked head-to-head, holding ML-DSA-44 constant:
 - **poll + server pacing** — today's workaround: 25 ms `DTLS_PACE_US` between server datagrams.
   Reliable, but the pacing is baked into (and inflates) the latency.
 - **interrupt-driven RX** (`-DDTLS_RX_IRQ`) — the ethmac RX ISR drains the MAC into the software
@@ -105,7 +105,7 @@ differently:**
 > **Correction to an earlier interim reading.** Runs on the *pre-fix* harness showed B2 (irq, 4
 > slots) as much slower than B1 (90–122 s vs ~70 s), which suggested "fewer slots is faster with
 > interrupt RX." That gap was a **harness artifact** (the first cell of each `nrxslots` ran a stale
-> Verilator model built for the previous slot count — see PROGRESS), not a transport effect. On the
+> Verilator model built for the previous slot count), not a transport effect. On the
 > corrected harness B1 and B2 are packet-for-packet identical. The real finding is the opposite of
 > the interim one: **with interrupt RX, slot count does not affect latency at all.**
 
