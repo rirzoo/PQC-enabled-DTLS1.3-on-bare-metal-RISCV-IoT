@@ -2,9 +2,9 @@
 
 Post-quantum-secured **DTLS 1.3** between a Linux server and a bare-metal **RISC-V** IoT
 device, simulated with **LiteX + Verilator**. The goal is a constrained embedded target
-(VexRiscv, simulated RAM/flash-scale footprint) speaking DTLS 1.3 with a post-quantum key
-exchange, so the crypto and transport work is representative of a real IoT deployment rather
-than a desktop-class TLS stack.
+(VexRiscv, simulated RAM/flash-scale footprint) speaking DTLS 1.3 with post-quantum key
+exchange **and** post-quantum authentication, so the crypto and transport work is
+representative of a real IoT deployment rather than a desktop-class TLS stack.
 
 ## Architecture
 
@@ -22,16 +22,22 @@ than a desktop-class TLS stack.
 
 - End-to-end **DTLS 1.3 handshake** completes between the simulated firmware and the host
   server over the real UDP transport.
-- **ML-KEM-512** post-quantum key exchange, negotiated and verified on both ends.
-- **ECC P-256** classical server-certificate authentication (client verifies the server; not
-  yet post-quantum-authenticated, and not yet mutual auth).
+- **Fully post-quantum handshake:** **ML-KEM-512** key exchange **+ ML-DSA-44 (Dilithium2)**
+  server-certificate authentication (the client verifies a PQ-signed cert; verify-only, so no
+  signing on the constrained target).
+- **Interrupt-driven RX transport:** an ethmac ISR drains the network device during crypto, so
+  the handshake-flight burst is not dropped at the few hardware RX slots — no server-side
+  pacing needed. Selected over a polled+paced path by a controlled 2×2 transport benchmark.
 - **AES-128-GCM / SHA-256** record protection, HKDF key schedule.
 - Firmware footprint and handshake-latency numbers are tracked per capability set — see
   **[BENCHMARKS.md](BENCHMARKS.md)**.
 
+Remaining classical gap: **mutual** authentication (the client does not yet present its own
+certificate).
+
 ## Where it's headed
 
-Post-quantum authentication (Dilithium/ML-DSA, then mutual auth), session resumption, and
+Mutual post-quantum authentication (a client ML-DSA cert), session resumption, and
 footprint/latency optimization once the feature set is locked in — see
 **[ROADMAP.md](ROADMAP.md)** for the full picture.
 
