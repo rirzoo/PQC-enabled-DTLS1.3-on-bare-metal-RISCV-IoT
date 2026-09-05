@@ -23,8 +23,15 @@ void dtls_io_init(uint16_t local_port, uint16_t peer_port);
 void dtls_io_register(WOLFSSL_CTX *ctx);
 
 /* Pump the network once (drains hardware RX into the ring, services ARP/ICMP).
- * Call repeatedly while wolfSSL returns WANT_READ/WANT_WRITE. */
+ * Call repeatedly while wolfSSL returns WANT_READ/WANT_WRITE. In a DTLS_RX_IRQ
+ * build RX is serviced in the ethmac ISR, so this is a no-op. */
 void dtls_io_pump(void);
+
+#ifdef DTLS_RX_IRQ
+/* Enable interrupt-driven RX (attach ethmac ISR, enable the RX event, unmask the
+ * CPU line). Call after ARP resolution and before the handshake. */
+void dtls_io_enable_irq(void);
+#endif
 
 /* Elapsed seconds since dtls_io_init(), backed by LiteX timer0. Also used by
  * wolfSSL as LowResTimer(). */

@@ -35,8 +35,11 @@
 #define CLIENT_PORT  5555
 #define SERVER_PORT  11111
 
-/* Give up on the handshake after this many simulated seconds (safety net). */
-#define HANDSHAKE_TIMEOUT_S  60
+/* Give up on the handshake after this many simulated seconds (safety net). Raised to
+ * 120 s for ML-DSA: the larger Certificate/CertificateVerify flight plus ML-DSA verify
+ * needs headroom so a slow-but-working config is not false-FAILed by the timer. A run
+ * that still cannot complete within 120 s is a genuine failure. */
+#define HANDSHAKE_TIMEOUT_S  120
 
 /*
  * Entropy source (CUSTOM_RAND_GENERATE_SEED). Mixes the free-running timer with
@@ -75,6 +78,15 @@ int main(void)
 
     /* Wire wolfSSL to the liteeth transport. */
     dtls_io_init(CLIENT_PORT, SERVER_PORT);
+
+#ifdef DTLS_RX_IRQ
+    /* Switch RX from polling to interrupt-driven now that the RX callback is
+     * installed and ARP is resolved. The ethmac ISR drains the MAC into the ring
+     * even while the CPU is mid-crypto, so the server's handshake-flight burst is
+     * not dropped at the 2 HW RX slots (removes the need for server-side pacing). */
+    dtls_io_enable_irq();
+    printf("Interrupt-driven RX enabled (ethmac irq %d).\n", ETHMAC_INTERRUPT);
+#endif
 
     wolfSSL_Init();
 #ifdef DEBUG_WOLFSSL

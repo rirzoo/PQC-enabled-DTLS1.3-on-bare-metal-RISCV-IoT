@@ -5,8 +5,11 @@
 #include <string.h>
 #include <sys/types.h>              /* ssize_t, used by wolfio.h's DTLS typedefs */
 #include <generated/csr.h>
-#include <generated/soc.h>          /* CONFIG_CLOCK_FREQUENCY */
+#include <generated/soc.h>          /* CONFIG_CLOCK_FREQUENCY, ETHMAC_INTERRUPT */
 #include <libliteeth/udp.h>
+#ifdef DTLS_RX_IRQ
+#include <irq.h>                     /* irq_attach/irq_getmask/irq_setmask */
+#endif
 
 #include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/ssl.h>
@@ -24,8 +27,13 @@
 
 static uint8_t  rx_buf[DTLS_RX_SLOTS][DTLS_MAX_DGRAM];
 static uint16_t rx_len[DTLS_RX_SLOTS];
-static int      rx_head;   /* next write slot */
-static int      rx_tail;   /* next read slot  */
+/* With DTLS_RX_IRQ, the producer (dtls_rx_cb, driven from the ethmac ISR) and the
+ * consumer (dtls_recv_cb, main loop) run in different contexts. The ring stays
+ * SPSC (rx_head only written by the producer, rx_tail only by the consumer), so
+ * no lock is needed; the indices are volatile so each side sees the other's
+ * updates. In the polled build both run in the main loop and volatile is a no-op. */
+static volatile int rx_head;   /* next write slot */
+static volatile int rx_tail;   /* next read slot  */
 
 static uint16_t g_local_port;
 static uint16_t g_peer_port;
@@ -144,7 +152,35 @@ void dtls_io_register(WOLFSSL_CTX *ctx)
     wolfSSL_SetIOSend(ctx, dtls_send_cb);
 }
 
+#ifdef DTLS_RX_IRQ
+/* ethmac RX interrupt handler. The event manager is level-sensitive, so drain
+ * every pending frame before returning (udp_service reads one HW slot, runs
+ * process_frame -> dtls_rx_cb -> ring, and acks ev_pending). Draining fully in
+ * the ISR is what lets the MAC be emptied while the main loop is busy in
+ * ML-KEM/ML-DSA crypto -- exactly the window the burst tail was dropped in. */
+static void ethmac_rx_isr(void)
+{
+    while (ethmac_sram_writer_ev_pending_read() & ETHMAC_EV_SRAM_WRITER)
+        udp_service();
+}
+
+/* Register + enable interrupt-driven RX. Call after ARP is resolved (the ARP
+ * loop still polls udp_service before this) and before the handshake. Once
+ * enabled the ISR owns the RX event, so the main loop must not also poll it. */
+void dtls_io_enable_irq(void)
+{
+    irq_attach(ETHMAC_INTERRUPT, ethmac_rx_isr);
+    ethmac_sram_writer_ev_enable_write(ETHMAC_EV_SRAM_WRITER);
+    irq_setmask(irq_getmask() | (1u << ETHMAC_INTERRUPT));
+}
+#endif /* DTLS_RX_IRQ */
+
 void dtls_io_pump(void)
 {
+#ifdef DTLS_RX_IRQ
+    /* RX is serviced by ethmac_rx_isr; nothing to poll here. TX goes out
+     * directly via udp_send in dtls_send_cb, so it is unaffected. */
+#else
     udp_service();
+#endif
 }

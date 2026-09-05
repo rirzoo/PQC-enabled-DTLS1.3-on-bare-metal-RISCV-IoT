@@ -33,6 +33,20 @@ CFLAGS += -DWOLFSSL_USER_SETTINGS
 # forces GCC to only emit naturally-aligned accesses. See PROGRESS.md (B5).
 CFLAGS += -mstrict-align
 
+# RX transport strategy (see dtls_io.c). DTLS_RX_IRQ=1 builds the interrupt-driven
+# RX path (ethmac ISR drains the MAC during crypto, no server pacing needed);
+# 0 keeps the polled path (udp_service in the pump loop + server-side DTLS_PACE_US).
+# Requires `make clean` to switch (a CFLAGS change does not rebuild existing .o files).
+# DEFAULT = 1 (interrupt RX): the ML-DSA-44 2x2 benchmark selected cell B1 (interrupt
+# RX, nrxslots=2, no pacing) as production -- interrupt RX beat poll+pacing at every
+# slot count and its latency is independent of slot depth, so the 2-slot config is
+# fastest-tier AND cheapest (BENCHMARKS.md, § ML-DSA-44). Build DTLS_RX_IRQ=0 only to
+# reproduce the polled comparison cells.
+DTLS_RX_IRQ ?= 1
+ifeq ($(DTLS_RX_IRQ),1)
+CFLAGS += -DDTLS_RX_IRQ
+endif
+
 boot.elf: $(OBJECTS)
 	$(CC) $(LDFLAGS) -T linker.ld -N -o $@ \
 		$(OBJECTS) \

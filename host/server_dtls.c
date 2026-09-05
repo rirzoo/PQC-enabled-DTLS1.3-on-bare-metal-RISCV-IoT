@@ -35,11 +35,17 @@
  * Finished) as a burst of datagrams within a fraction of a millisecond; the slow
  * client, busy in ML-KEM/cert crypto, cannot drain the MAC in time, so the tail
  * of each burst (notably the 66-byte Finished record) is dropped in hardware and
- * the handshake never completes. Spacing the datagrams gives the client time to
+ * the handshake never completes. Spacing the datagrams gave the client time to
  * drain each one. Delay is tunable via DTLS_PACE_US (microseconds) so it can be
  * adjusted without recompiling. See PROGRESS.md B6.
+ *
+ * DEFAULT = 0 (no pacing): the production client now uses interrupt-driven RX
+ * (boot/Makefile DTLS_RX_IRQ=1, benchmark cell B1), whose ISR drains the MAC even
+ * mid-crypto, so pacing is no longer needed and only inflates latency. Set
+ * DTLS_PACE_US=25000 to reproduce the polled comparison cells (A1/A2), which still
+ * depend on it. See BENCHMARKS.md § ML-DSA-44.
  */
-static long g_pace_us = 25000;   /* default 25 ms between flight datagrams */
+static long g_pace_us = 0;   /* default: no pacing (interrupt-RX client drains in the ISR) */
 
 static int PacedSend(WOLFSSL *ssl, char *buf, int sz, void *ctx)
 {
