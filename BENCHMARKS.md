@@ -4,31 +4,24 @@ Firmware footprint and handshake-latency results for the **client firmware**
 (`boot/boot.elf` → `boot/boot.bin`), tracked against **what the built client can actually do**
 — the capability set it supports at that point, not the raw list of build flags.
 
-**Reporting structure (while features are still being added).** The three PQC capabilities
-(**ML-KEM** key exchange ✅, **ML-DSA** authentication — this pass, **session resumption** — next)
-are each explored with different *methods* that produce different result shapes, so a single
-combined table is neither practical nor readable. Each feature therefore gets **its own H2
-section and table** below. Only once **all three** features are implemented and we enter the
-pure-optimization phase do we consolidate into one cross-feature table. `evidence/*.csv` keeps
-every raw row regardless of presentation.
+Each PQC capability (**ML-KEM** key exchange ✅, **ML-DSA** authentication ✅, **session
+resumption** — next) gets its own section and table below, since each is measured differently;
+they consolidate into one cross-feature table once all three land. `evidence/*.csv` keeps every
+raw row.
 
-**Selection policy (explicit, phase-scoped).** While we are still *building features*, among
-passing configurations we pick the **lowest handshake latency**, breaking ties by **memory**
-(smaller firmware image, then less SoC RX SRAM). Latency has precedence and memory is the
-tiebreaker **now**; once the feature set is complete and we move to pure optimization, the
-weighting may shift (memory may gain precedence). The logged cells let us re-pick under whatever
-rule applies then without re-running.
+**Selection policy (feature-building phase):** among passing configurations, pick the **lowest
+handshake latency**, ties broken by **memory** (firmware image, then SoC RX SRAM). This may shift
+toward memory once we enter pure optimization; the logged cells let us re-pick then without
+re-running.
 
 ---
 
 ## § Baseline — ML-KEM-512 key exchange + ECC P-256 auth (Phase B / B6)
 
-**How to reproduce a row:** run **`scripts/footprint.sh`** — it reads `.text/.rodata/.data/.bss`
-from `<triple>-size -A boot/boot.elf`, the loadable image from `stat -c%s boot/boot.bin`, and
-scrapes the handshake latency from the newest `evidence/phaseB_sim.log` (`handshake time: N ms`,
-printed by the firmware). `-a` appends a machine-readable row to `evidence/footprint.csv`. Ignore
-the Berkeley (`size` without `-A`) `bss` total: it folds in `._user_heap` (a fixed **16 MiB**
-static pool, not capability-scaled) and so overstates RAM by ~16 MB.
+**Reproduce:** `scripts/footprint.sh` (see SETUP.md § 10 for how to run it and append CSV rows).
+When reading the table, ignore the Berkeley (`size` without `-A`) `bss` total: it folds in
+`._user_heap` (a fixed **16 MiB** static pool, not capability-scaled) and so overstates RAM by
+~16 MB.
 
 **Handshake latency** is **sim-time milliseconds** (firmware `dtls_uptime_millis()`, a 1 MHz tick),
 deterministic regardless of host/Verilator speed. It is *transport-inclusive* (round-trips,
@@ -53,9 +46,8 @@ comparable — the point of the ML-DSA matrix is to measure the pacing→interru
 Replaces the classical ECC P-256 server cert with a self-signed **ML-DSA-44 (Dilithium2)** cert
 that the firmware client verifies (`WOLFSSL_DILITHIUM_VERIFY_ONLY` — the client never signs), so
 the handshake is now **post-quantum-authenticated** (ML-KEM-512 KEM + ML-DSA-44 auth). Client
-firmware config: `boot/wolfssl/wolfcrypt/user_settings.h`; cert minted by
-`scripts/gen_certs.sh` → `scripts/gen_mldsa_cert.c` (wolfCrypt; OpenSSL 3.2 here cannot mint
-ML-DSA). Cert size jumps from ~0.4 KB (ECC) to **3,996 B DER**.
+firmware config: `boot/wolfssl/wolfcrypt/user_settings.h`; the cert is minted by
+`scripts/gen_certs.sh` (SETUP.md § 7). Cert size jumps from ~0.4 KB (ECC) to **3,996 B DER**.
 
 **The transport lever.** ML-DSA's larger Certificate/CertificateVerify flight makes the liteeth
 **RX-burst** problem worse (the SoC has only 2 HW RX slots; while the CPU is busy in ML-KEM/ML-DSA
@@ -71,8 +63,8 @@ a 2×2 matrix. `.text`/`boot.bin` are firmware ROM; `RX SRAM` is the SoC-side co
 actually buys (`nrxslots × 2,048 B`) — reported separately because the firmware ROM barely moves
 with slot count.
 
-**Reproduce:** `! bash scripts/run_mldsa_bench.sh` (needs sudo/tty; drives all four cells and
-writes `evidence/mldsa_bench.csv`). The firmware bakes `ETHMAC_RX_SLOTS` into udp.c's TX-buffer
+**Reproduce:** `scripts/run_mldsa_bench.sh` (see SETUP.md § 10). It drives all four cells and
+writes `evidence/mldsa_bench.csv`; the firmware bakes `ETHMAC_RX_SLOTS` into udp.c's TX-buffer
 offset, so the harness rebuilds the firmware for each `nrxslots`.
 
 | Cell | RX method | nrxslots | pacing (µs) | Handshake (ms) | .text | Loadable `boot.bin` | RX SRAM | Pass | ★ |
